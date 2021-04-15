@@ -9,6 +9,7 @@
                 "${file}",
                 "-w",
                 "-lSDL2",
+                "-lSDL2_ttf",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],

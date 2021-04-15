@@ -1,12 +1,19 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_scancode.h>
+#include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <string>
 #include <stdio.h>
 
 using namespace std;
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 768;
+
+SDL_Rect Message_rect;
+TTF_Font* font;
 
 wstring tetromino[7];
 
@@ -14,8 +21,11 @@ int nFieldWidth = 12; //game field width
 int nFieldHeight = 18; //game field height
 unsigned char *pField = nullptr; //initiate field as null pointer
 
-int nScreenWidth = 80;
-int nScreenHeight = 30;
+SDL_Color foregroundColor = { 255, 255, 255 };
+SDL_Color backgrounddColor = { 0, 0, 0 };
+SDL_Window* window = NULL;
+SDL_Renderer* screen = NULL;
+SDL_Texture* Message = NULL;
 
 int Rotate(int px, int py, int r)
 {
@@ -29,10 +39,27 @@ int Rotate(int px, int py, int r)
     return 0;
 }
 
-int main ( int argc, char* args[] )
+void HandleEvent(const SDL_Event& e)
 {
-    SDL_Window* window = NULL;
-    SDL_Surface* screenSurface = NULL;
+
+}
+
+int main ( int argc, char **argv )
+{
+    if (TTF_Init() < 0)
+    {
+        printf("ERROR TTF");
+    }
+    
+    font = TTF_OpenFont("couri.ttf", 12);
+    if (!font)
+    {
+        printf("ERRO FONTE %s\n", TTF_GetError());
+    }
+    SDL_Surface* textSurface = TTF_RenderText_Solid(font, "CHAMAAAAAAAAAAAAAAAAAAAAAAAA", foregroundColor);       
+
+    
+    
 
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
@@ -40,28 +67,24 @@ int main ( int argc, char* args[] )
     }
     else
     {
-        window = SDL_CreateWindow( "TETRIS by Alexandre Bressane", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-    
-        if( window == NULL )
-            {
-                printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
-            }
-
-            else
-        {
-            //Get window surface
-            screenSurface = SDL_GetWindowSurface( window );
-
-            //Fill the surface white
-            SDL_FillRect( screenSurface, NULL, SDL_MapRGB( screenSurface->format, 0xFF, 0xFF, 0xFF ) );
-            
-            //Update the surface
-            SDL_UpdateWindowSurface( window );
-
-            //Wait two seconds
-            SDL_Delay( 2000 );
-        }
+        window = SDL_CreateWindow( "TETRIS by Alexandre Bressane", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
     }
+    
+
+    Message_rect.x = 20;
+    Message_rect.y = 10;
+    Message_rect.w = 800;
+    Message_rect.h = 140;
+    
+    if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
+    {
+        printf("Error creating renderer %s\n", SDL_GetError());
+    } 
+    Message = SDL_CreateTextureFromSurface(screen, textSurface);
+    
+    
+
+    SDL_Event e;
 
     //tetris blocks as assets in tetromino matrix
     tetromino[0].append(L"..X.");
@@ -101,24 +124,50 @@ int main ( int argc, char* args[] )
 
     //initialize the game field
     pField = new unsigned char[nFieldWidth*nFieldHeight];
-    for (int x = 0; x < nFieldWidth; x++)
-        for (int y = 0; y < nFieldHeight; y++)
-            pField[y*nFieldWidth + x] = (x == 0 || x == nFieldWidth - 1 || y == nFieldHeight - 1) ? 9 : 0;
-
-    char *screen = new char[nScreenWidth*nScreenHeight];
-    for (int i = 0; i < nScreenWidth*nScreenHeight; i++) screen[i] = L' ';
-        
+ 
     //Game loop
     bool bGameOver = false;
-
+   
     while (!bGameOver)
     {
-        for (int x = 0; x < nFieldWidth; x++)
-            for (int y = 0; y < nFieldHeight; y++)
-                screen[(y + 2)*nScreenWidth + (x + 2)] = L" ABCDEFG=#"[pField[y*nFieldWidth + x]];
+        const Uint8 *state = SDL_GetKeyboardState(NULL);
+        while (SDL_PollEvent(&e) != 0)
+        {
+            HandleEvent(e);
+        }
+
+        if( window == NULL )
+        {
+            printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+        }
+        else
+        {
+            
+            
+            
+            SDL_SetRenderDrawColor(screen, 50, 0, 255, 255);
+            SDL_RenderClear(screen);
+
+            if ((SDL_RenderCopy(screen, Message, NULL, &Message_rect)) < 0)
+            {
+                printf("ERROR RENDER COPY %s\n", SDL_GetError() );
+            }
+            SDL_RenderPresent(screen);
+
+            SDL_Delay( 200 );
+
+            Message_rect.x++;
+            if (state[SDL_SCANCODE_Q])
+            {
+                SDL_FreeSurface(textSurface);
+                TTF_CloseFont(font);
+                TTF_Quit();
+                SDL_Quit();
+                bGameOver = true;
+                return(0);
+            } 
+        }
 
     }
-
-
     return 0;
 }
