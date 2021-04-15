@@ -1,7 +1,12 @@
 TETRIS
 
+C++ Game showcase. 
 
-C++ Showcase. Enjoi-it and learn for free.
+Requires SDL2 and SDL2_TTF (I'd encourage you to read the libs documentation)
+
+To compile, use these flags: "-w -lSDL2 -lSDL2_ttf" to link.
+
+Enjoy-it!
 
 
 Best,
