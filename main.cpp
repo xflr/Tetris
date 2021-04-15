@@ -131,7 +131,6 @@ int main ( int argc, char **argv )
     SDL_Surface* bottomBoundSurface = TTF_RenderText_Shaded(font, " ", foregroundColor, { 255, 255, 0 });
     SDL_Surface* rightBoundSurface = TTF_RenderText_Shaded(font, " ", foregroundColor, { 255, 255, 0 });
     
-    
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
         printf( "SDL coud not intilalize! SDL_Error: %s\n", SDL_GetError() );
@@ -154,7 +153,6 @@ int main ( int argc, char **argv )
     rBound = SDL_CreateTextureFromSurface(screen, rightBoundSurface);
 
     SDL_Event e;
-
     
     //Game loop
     bool bGameOver = false;
