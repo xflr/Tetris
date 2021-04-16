@@ -265,8 +265,9 @@ int main ( int argc, char **argv )
     
     if (!font)
     {
-        printf("ERRO FONTE %s\n", TTF_GetError());
+        printf("ERROR FONT %s\n", TTF_GetError());
     }
+
     SDL_Surface* leftBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
     SDL_Surface* bottomBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
     SDL_Surface* rightBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
