@@ -340,7 +340,7 @@ int main ( int argc, char **argv )
                 //Accelerate the fall of piece by pressing down key
                 cur.y += (state[SDL_SCANCODE_DOWN] && !(isOnBoundaries(3) == "bottom_b")) ? 1 : 0;
                 //Keep dropping by 1 continuously until hit the bottom boundary
-                if (timer >= 50)
+                if (timer >= dropSpeed)
                 {
                     cur.y += !( (cur.y * TILE_SIZE)  >= ((SCREEN_HEIGHT - (bBound_rect.h ) - cur.size * TILE_SIZE) ))? 1 : 0;
                     timer = 0;
