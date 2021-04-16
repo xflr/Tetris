@@ -228,6 +228,7 @@ string isOnBoundaries(int cDirection)
         return " ";
         break;
     }
+    return "";
 }
 
 void HandleEvent(const SDL_Event& e)
