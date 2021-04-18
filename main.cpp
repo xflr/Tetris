@@ -122,7 +122,26 @@ string isOnBoundaries(int cDirection)
     switch (cDirection)
     {
     case 0:
+    {    
+        int gridX = cur.x;
+        int gridY = cur.y;
+        int tmpX;
+        int tmpY;
+        for (int blockX = 0; blockX < 4; blockX++)
+        {
+            for (int blockY = 0; blockY < 4; blockY++)
+            {
+                    tmpX = gridX + blockX - 1;
+                    tmpY = gridY+ blockY;
+                    if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
+                        { return "left_bound"; break; }
 
+            }
+        }
+       
+    break;
+    }
+    /* //OLD VERSION OF LEFT BOUNDARY COLLISION DETECTION BELLOW    
         if (cur.x == 1) {
             if ( (cur.matrix[0][0]) || (cur.matrix[0][1]) || (cur.matrix[0][2]) || (cur.matrix[0][3]) ) {
                 return "left_bound";
@@ -154,6 +173,7 @@ string isOnBoundaries(int cDirection)
         }
     return " ";
     break; 
+    */
 
     case 1:
     {    
@@ -184,26 +204,24 @@ string isOnBoundaries(int cDirection)
         break;
 
     case 3:
-        if ( (cur.y * TILE_SIZE)  >= ((SCREEN_HEIGHT - 1 - cur.size * TILE_SIZE) ))
+    {    
+        int gridX = cur.x;
+        int gridY = cur.y;
+        int tmpX;
+        int tmpY;
+        for (int blockX = 3; blockX >=  0; blockX--)
         {
-            if ((cur.matrix[0][4]) || (cur.matrix[1][4]) || (cur.matrix[2][4]) || (cur.matrix[3][4]))
+            for (int blockY = 3; blockY >= 0; blockY--)
             {
-                newBlock();
-                return "bottom_b"; 
-                break;
-                
+                    tmpX = gridX + blockX;
+                    tmpY = gridY+ blockY + 1;
+                    if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
+                        { newBlock(); return "bottom_b"; break; }
             }
-            else
-            {   
-                return " ";
-                break;
-            
-            }
-            return " ";    
-            break;    
         }
-        return " ";
-        break;
+       
+    break;
+    }  
     case 4:
         //Chek if rotation is possible when on left boundary
         if ( (cur.x == 1)){
@@ -365,7 +383,7 @@ int main ( int argc, char **argv )
                 //Keep dropping by 1 continuously until hit the bottom boundary
                 if (timer >= dropSpeed)
                 {
-                    cur.y += !(((cur.y * TILE_SIZE)  >= SCREEN_HEIGHT) && !(isOnBoundaries(3) == "bottom_b")) ? 1 : 0;
+                    cur.y += !(isOnBoundaries(3) == "bottom_b") ? 1 : 0;
                     timer = 0;
                 }
             //Quit Screen freeing memory of SDL components when press Q key            
