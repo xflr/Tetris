@@ -304,6 +304,16 @@ void newBlock()
     cur.x = 5; cur.y = 0;
     
 }
+
+void checkFullLines()
+{
+    //loop tru all lines and check the matrix of line y from x=1 to x=gridWidth - 1
+
+    //if so change this whole line to 0
+
+    //then move all lines from y=0 to y + 1 until tempY, where found the full line
+}
+
 void HandleEvent(const SDL_Event& e)
 {
 
