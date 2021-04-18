@@ -1,22 +1,19 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_scancode.h>
-#include <SDL2/SDL_ttf.h>
 #include <iostream>
 #include <vector>
 #include <stdio.h>
+#include "tetris.h"
 
 const int TILE_SIZE = 32;
-//PAHHHH
+
 using namespace std;
 
 bool isKeyPressed;
 double timer = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms
 
-const int SCREEN_WIDTH = 480;
-const int SCREEN_HEIGHT = 768;
-
-SDL_Rect rect, lBound_rect, bBound_rect, rBound_rect;
+SDL_Rect rect, gridRect;
 SDL_Color foregroundColor = { 255, 255, 255 };
 SDL_Color backgrounddColor = { 0, 0, 0 };
 
@@ -29,81 +26,7 @@ SDL_Texture* lBound = NULL;
 SDL_Texture* bBound = NULL;
 SDL_Texture* rBound = NULL;
 
-TTF_Font* font;
-
-struct block 
-{    
-    SDL_Color color;
-    bool active;
-};
-
-struct shape
-{
-    SDL_Color color;
-    bool matrix[4][4];
-    double x, y;
-    int size;
-};
-
-shape blocks[7] 
-{
-    {
-        {255,255,0},{ //L BLOCK
-        {0,0,1,0},
-        {1,1,1,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,3
-    },
-    {
-        {255,130,0},{ //I BLOCK
-        {1,1,1,1},
-        {0,0,0,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,4
-    },
-    {
-        {230,255,255},{ //Z BLOCK
-        {1,1,0,0},
-        {0,1,1,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,3
-    },
-    {
-        {230,50,255},{ //J BLOCK
-        {1,0,0,0},
-        {1,1,1,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,3
-    },
-    {
-        {0,255,128},{ //SQUARE BLOCK
-        {1,1,0,0},
-        {1,1,0,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,2
-    },
-    {
-        {0,48,128},{ //S BLOCK
-        {0,1,1,0},
-        {1,1,0,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,3
-    },
-    {
-        {0,255,128},{ //T BLOCK
-        {0,1,0,0},
-        {1,1,1,0},
-        {0,0,0,0},
-        {0,0,0,0}},
-        5,4,3
-    }
-}, cur;
+void newBlock();
 
 shape reverseCols(shape s)
 {
@@ -132,7 +55,7 @@ shape transpose(shape s)
     return temp;
 }
 
-void draw(shape s)
+void draw(shape s, grid g)
 {
     for (int i = 0; i < s.size; i++)
     {
@@ -148,31 +71,35 @@ void draw(shape s)
             }
         }
     }
+    double screenDrawX, screenDrawY;
+    //draw stage
+    for (int i = 0; i < gridWidth; i++)
+    {
+        for(int j = 0; j < gridHeight; j++)
+        {
+            if (curGrid.matrix[j][i])
+            {
+                screenDrawX = (i * TILE_SIZE) ;
+                screenDrawY = (j * TILE_SIZE) ;
+                gridRect.x=screenDrawX; gridRect.y=screenDrawY;
+
+                SDL_SetRenderDrawColor(screen, 255, 255, 255, 255);
+                SDL_RenderFillRect(screen, &gridRect);
+                SDL_SetRenderDrawColor(screen, 219, 219, 219, 255);
+                SDL_RenderDrawRect(screen, &gridRect);
+            }
+        }
+    }
 }
 
 void render()
 {
-    //Background color of screen
-            SDL_SetRenderDrawColor(screen, 50, 0, 255, 255);
-            
+            //Background color of screen
+            SDL_SetRenderDrawColor(screen, 50, 0, 155, 255);
             //Clear the screen. Remember, clear before draw every frame on game loop
             SDL_RenderClear(screen);
-            // error check while adding all components (surfaces) to screen
-            
-            if ((SDL_RenderCopy(screen, lBound, NULL, &lBound_rect)) < 0)
-            {
-                printf("ERROR RENDER COPY %s\n", SDL_GetError() );
-            }
-            if ((SDL_RenderCopy(screen, bBound, NULL, &bBound_rect)) < 0)
-            {
-                printf("ERROR RENDER COPY %s\n", SDL_GetError() );
-            }
-            if ((SDL_RenderCopy(screen, rBound, NULL, &rBound_rect)) < 0)
-            {
-                printf("ERROR RENDER COPY %s\n", SDL_GetError() );
-            }
             //draw moving objects
-            draw(cur);
+            draw(cur, curGrid);
             //Render all objects (surfaces) previously added to screen
             SDL_RenderPresent(screen);
             
@@ -180,7 +107,7 @@ void render()
 
 void update ()
 {
-   timer++;
+    timer++;
             
     //// Things to update above, render below
     render();
@@ -195,82 +122,177 @@ string isOnBoundaries(int cDirection)
     switch (cDirection)
     {
     case 0:
-        if (((cur.x * TILE_SIZE)  - TILE_SIZE)  <= 0 )
-        { 
-            return "left_bound";
+
+        if (cur.x == 1) {
+            if ( (cur.matrix[0][0]) || (cur.matrix[0][1]) || (cur.matrix[0][2]) || (cur.matrix[0][3]) ) {
+                return "left_bound";
+                break;
+            }
+        }
+        if (cur.x == 0) {
+            if ( (cur.matrix[1][0]) || (cur.matrix[1][1]) || (cur.matrix[1][2]) || (cur.matrix[1][3]) ) {
+                return "left_bound";
+                break;
+            }
+        }
+        if (cur.x == -1) {
+            if ( (cur.matrix[2][0]) || (cur.matrix[2][1]) || (cur.matrix[2][2]) || (cur.matrix[2][3]) ) {
+                return "left_bound";
+                break;
+            }
+        }
+        if (cur.x == -2) {
+            if ( (cur.matrix[3][0]) || (cur.matrix[3][1]) || (cur.matrix[3][2]) || (cur.matrix[3][3]) ) {
+                return "left_bound";
+                break;
+            }
+        }
+        else
+        {
+            return " ";
             break;
         }
-        return " ";
-        break;
+    return " ";
+    break; 
+
     case 1:
-        if (((cur.x * TILE_SIZE) + cur.size * TILE_SIZE) >= (SCREEN_WIDTH - lBound_rect.w))
-        { 
-            return "right_bound"; 
-            break;
+    {    
+        int gridX = cur.x;
+        int gridY = cur.y;
+        int tmpX;
+        int tmpY;
+        for (int blockX = 4; blockX >=  0; blockX--)
+        {
+            for (int blockY = 4; blockY >= 0; blockY--)
+            {
+                    tmpX = gridX + blockX + 1;
+                    tmpY = gridY+ blockY;
+                    if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
+                        { return "right_bound"; break; }
+
+            }
         }
-        return " ";
-        break;
-    
+       
+    break;
+    }  
     case 2:
         if (cur.y <= 0)
-        { 
             return "top_bound"; 
             break;
-        }
+        
         return " ";
         break;
+
     case 3:
-        if ( (cur.y * TILE_SIZE)  >= ((SCREEN_HEIGHT - (bBound_rect.h ) - cur.size * TILE_SIZE) ))
-        { 
-            return "bottom_b"; 
+        if ( (cur.y * TILE_SIZE)  >= ((SCREEN_HEIGHT - 1 - cur.size * TILE_SIZE) ))
+        {
+            if ((cur.matrix[0][4]) || (cur.matrix[1][4]) || (cur.matrix[2][4]) || (cur.matrix[3][4]))
+            {
+                newBlock();
+                return "bottom_b"; 
+                break;
+                
+            }
+            else
+            {   
+                return " ";
+                break;
+            
+            }
+            return " ";    
             break;    
         }
         return " ";
         break;
+    case 4:
+        //Chek if rotation is possible when on left boundary
+        if ( (cur.x == 1)){
+            if (cur.size == 3){
+                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+                    return "cant_rotate"; 
+                    break;  
+            }
+            if (cur.size == 4) {
+                if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
+                    return "cant_rotate"; 
+                    break;    
+            }
+        }
+        if ( (cur.x <= 0) ){
+            if (cur.size == 3){
+                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+                    return "cant_rotate"; 
+                    break;  
+            }
+            if (cur.size == 4) {
+                if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
+                    return "cant_rotate"; 
+                    break;    
+            }
+        }
+        
+        //Chek if rotation is possible when on right boundary
+        if ( ((cur.x + cur.size)) == (gridWidth - 2)) {
+            if (cur.size == 3){
+                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+                    return "cant_rotate"; 
+                    break;  
+            }
+            if (cur.size == 4) {
+                if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
+                    return "cant_rotate"; 
+                    break;    
+            }
+        }
+        if ( ((cur.x + cur.size) - 1) >= (gridWidth - 2)) {
+            if (cur.size == 3){
+                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+                    return "cant_rotate"; 
+                    break;  
+            }
+            if (cur.size == 4) {
+                if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
+                    return "cant_rotate"; 
+                    break;    
+            }
+        }
+        return " ";
+        break;
     }
-    return "";
+    return " ";
 }
 
+void newBlock() 
+{
+    int matX, matY;
+    //shape stage[cur.x][cur.y] += cur;
+    for (int i = 0; i < cur.size; i++)
+    {
+        for(int j = 0; j < cur.size; j++)
+        {
+            if (cur.matrix[i][j])
+            {
+                matX = cur.x + i;
+                matY = cur.y + j;
+                curGrid.matrix[matY][matX] = cur.matrix[i][j];
+            }
+        }
+    }
+
+    cur = blocks[rand() % 7];
+    rect.w=rect.h=TILE_SIZE;
+    cur.x = 5; cur.y = 0;
+    
+}
 void HandleEvent(const SDL_Event& e)
 {
 
 }
 
-void setSizes()
-{   
-    lBound_rect.x = 0;
-    lBound_rect.y = 0;
-    lBound_rect.w = TILE_SIZE;
-    lBound_rect.h = SCREEN_HEIGHT;
 
-    bBound_rect.x = lBound_rect.w;
-    bBound_rect.y = (SCREEN_HEIGHT - TILE_SIZE);
-    bBound_rect.w = SCREEN_WIDTH - (lBound_rect.w * 2);
-    bBound_rect.h = TILE_SIZE;
-
-    rBound_rect.x = SCREEN_WIDTH - TILE_SIZE;
-    rBound_rect.y = 0;
-    rBound_rect.w = TILE_SIZE;
-    rBound_rect.h = SCREEN_HEIGHT;
-}
 
 int main ( int argc, char **argv )
 {
-    if (TTF_Init() < 0)
-    {
-        printf("ERROR TTF");
-    }
-    
-    font = TTF_OpenFont("Courier_New.ttf", 32);
-    
-    if (!font)
-    {
-        printf("ERROR FONT %s\n", TTF_GetError());
-    }
-
-    SDL_Surface* leftBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
-    SDL_Surface* bottomBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
-    SDL_Surface* rightBoundSurface = TTF_RenderText_Shaded(font, "#", foregroundColor, { 255, 255, 0 });
     
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
@@ -280,22 +302,21 @@ int main ( int argc, char **argv )
     {
         window = SDL_CreateWindow( "TETRIS by Alexandre Bressane - press q to quit", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
     }
-
     
     if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
     {
         printf("Error creating renderer %s\n", SDL_GetError());
     } 
     srand(time(NULL));
-    cur = blocks[rand() % 7];
+    cur = blocks[4];
+    //cur = blocks[rand() % 7];
     rect.w=rect.h=TILE_SIZE;
     cur.x = 5; cur.y = 0;
-    setSizes();
 
-    lBound = SDL_CreateTextureFromSurface(screen, leftBoundSurface);    
-    bBound = SDL_CreateTextureFromSurface(screen, bottomBoundSurface);
-    rBound = SDL_CreateTextureFromSurface(screen, rightBoundSurface);
-
+    gridRect.w=gridRect.h=TILE_SIZE;
+    
+    curGrid = stage;
+   
     SDL_Event e;
     
     //Game loop
@@ -328,7 +349,7 @@ int main ( int argc, char **argv )
                 //Just a try to hold the piece on same heigth using up key    
                 if (state[SDL_SCANCODE_UP])
                 {
-                    if (!isKeyPressed && !(isOnBoundaries(2) == "top_bound"))
+                    if (!isKeyPressed && !(isOnBoundaries(2) == "top_bound") && !(isOnBoundaries(4) == "cant_rotate"))
                     {
                         rotate();
                         isKeyPressed = true;
@@ -344,20 +365,15 @@ int main ( int argc, char **argv )
                 //Keep dropping by 1 continuously until hit the bottom boundary
                 if (timer >= dropSpeed)
                 {
-                    cur.y += !( (cur.y * TILE_SIZE)  >= ((SCREEN_HEIGHT - (bBound_rect.h ) - cur.size * TILE_SIZE) ))? 1 : 0;
+                    cur.y += !(((cur.y * TILE_SIZE)  >= SCREEN_HEIGHT) && !(isOnBoundaries(3) == "bottom_b")) ? 1 : 0;
                     timer = 0;
                 }
             //Quit Screen freeing memory of SDL components when press Q key            
             if (state[SDL_SCANCODE_Q])
             {   
                 bGameOver = true;
-                SDL_FreeSurface(rightBoundSurface);
-                SDL_FreeSurface(leftBoundSurface);
-                SDL_FreeSurface(bottomBoundSurface);
                 SDL_DestroyRenderer(screen);
                 SDL_DestroyWindow(window);
-                TTF_CloseFont(font);
-                TTF_Quit();
                 SDL_Quit();
                 
                 return(0);
