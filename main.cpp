@@ -28,7 +28,7 @@ SDL_Texture* rBound = NULL;
 
 void newBlock();
 
-shape reverseCols(shape s)
+shape revCols(shape s)
 {
     shape temp = s;
     for (int i = 0; i < s.size; i++)
@@ -42,7 +42,8 @@ shape reverseCols(shape s)
     }
     return temp;
 }
-shape transpose(shape s)
+
+shape transposeShape(shape s)
 {
     shape temp = s;
     for (int i = 0; i < s.size; i++)
@@ -114,10 +115,10 @@ void update ()
 }
 void rotate()
 {
-    cur = reverseCols(transpose(cur));
+    cur = revCols(transposeShape(cur));
 }
 
-string isOnBoundaries(int cDirection) 
+string willCollide(int cDirection) 
 {
     switch (cDirection)
     {
@@ -198,6 +199,7 @@ string isOnBoundaries(int cDirection)
     case 2:
         if (cur.y <= 0)
             return "top_bound"; 
+            
             break;
         
         return " ";
@@ -338,7 +340,7 @@ int main ( int argc, char **argv )
     SDL_Event e;
     
     //Game loop
-    bool bGameOver = false;
+    
     isKeyPressed = false;
     while (!bGameOver)
     {   
@@ -362,12 +364,12 @@ int main ( int argc, char **argv )
             SDL_Delay( 20 );
 
             //Left and Right movement until reach the side boundaries using ternary condition for clean code
-                cur.x -= (state[SDL_SCANCODE_LEFT] && !(isOnBoundaries(0) == "left_bound")) ? 1 : 0;
-                cur.x += (state[SDL_SCANCODE_RIGHT] && !(isOnBoundaries(1) == "right_bound")) ? 1 : 0;
+                cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
+                cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
                 //Just a try to hold the piece on same heigth using up key    
                 if (state[SDL_SCANCODE_UP])
                 {
-                    if (!isKeyPressed && !(isOnBoundaries(2) == "top_bound") && !(isOnBoundaries(4) == "cant_rotate"))
+                    if (!isKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
                     {
                         rotate();
                         isKeyPressed = true;
@@ -379,14 +381,14 @@ int main ( int argc, char **argv )
                 }
 
                 //Accelerate the fall of piece by pressing down key
-                cur.y += (state[SDL_SCANCODE_DOWN] && !(isOnBoundaries(3) == "bottom_b")) ? 1 : 0;
+                cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
                 //Keep dropping by 1 continuously until hit the bottom boundary
                 if (timer >= dropSpeed)
                 {
-                    cur.y += !(isOnBoundaries(3) == "bottom_b") ? 1 : 0;
+                    cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0;
                     timer = 0;
                 }
-            //Quit Screen freeing memory of SDL components when press Q key            
+            //Quit Screen and free memory of SDL components when press Q key            
             if (state[SDL_SCANCODE_Q])
             {   
                 bGameOver = true;
