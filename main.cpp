@@ -348,7 +348,7 @@ int main ( int argc, char **argv )
     curGrid = stage;
    
     SDL_Event e;
-    
+    bool bGameOver = false;
     //Game loop
     
     isKeyPressed = false;
