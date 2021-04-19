@@ -9,7 +9,7 @@ const int TILE_SIZE = 32;
 
 using namespace std;
 
-bool isKeyPressed;
+bool isKeyPressed, isPKeyPressed;
 double timer = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms
 
@@ -182,9 +182,9 @@ string willCollide(int cDirection)
         int gridY = cur.y;
         int tmpX;
         int tmpY;
-        for (int blockX = 4; blockX >=  0; blockX--)
+        for (int blockX = 3; blockX >=  0; blockX--)
         {
-            for (int blockY = 4; blockY >= 0; blockY--)
+            for (int blockY = 3; blockY >= 0; blockY--)
             {
                     tmpX = gridX + blockX + 1;
                     tmpY = gridY+ blockY;
@@ -299,6 +299,7 @@ void newBlock()
         }
     }
 
+    //cur = blocks[4];
     cur = blocks[rand() % 7];
     rect.w=rect.h=TILE_SIZE;
     cur.x = 5; cur.y = 0;
@@ -338,8 +339,8 @@ int main ( int argc, char **argv )
         printf("Error creating renderer %s\n", SDL_GetError());
     } 
     srand(time(NULL));
-    cur = blocks[4];
-    //cur = blocks[rand() % 7];
+    //cur = blocks[4];
+    cur = blocks[rand() % 7];
     rect.w=rect.h=TILE_SIZE;
     cur.x = 5; cur.y = 0;
 
@@ -348,9 +349,12 @@ int main ( int argc, char **argv )
     curGrid = stage;
    
     SDL_Event e;
+
     bool bGameOver = false;
+    bool bIsPaused = false;
     //Game loop
     
+    isPKeyPressed = false;
     isKeyPressed = false;
     while (!bGameOver)
     {   
@@ -359,56 +363,72 @@ int main ( int argc, char **argv )
         //then loop for events and handle it. Required to monitor keyboard events, for example.
         while (SDL_PollEvent(&e) != 0)
         {
-            HandleEvent(e);
+                HandleEvent(e);
         }
 
-        if( window == NULL )
-        {
-            printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
-        }
-        else
-        {
-            update();
-
-            //Game tick timer in 17ms (~60fps)
-            SDL_Delay( 20 );
-
-            //Left and Right movement until reach the side boundaries using ternary condition for clean code
-                cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
-                cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
-                //Just a try to hold the piece on same heigth using up key    
-                if (state[SDL_SCANCODE_UP])
+            if( window == NULL )
+            {
+                printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+            }
+            else
+            {
+                if (!bIsPaused)
                 {
-                    if (!isKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
+                    update();
+
+                    //Game tick timer in 17ms (~60fps)
+                    SDL_Delay( 20 );
+
+                    //Left and Right movement until reach the side boundaries using ternary condition for clean code
+                    cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
+                    cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
+                    //Just a try to hold the piece on same heigth using up key    
+                    if (state[SDL_SCANCODE_UP])
                     {
-                        rotate();
-                        isKeyPressed = true;
+                        if (!isKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
+                        {
+                            rotate();
+                            isKeyPressed = !isKeyPressed ? 1 : 0;
+                        }
+                    }
+                    else{
+                        isKeyPressed = false;
+                    }
+                    //Accelerate the fall of piece by pressing down key
+                    cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
+                    //Keep dropping by 1 continuously until hit the bottom boundary
+                    if (timer >= dropSpeed)
+                    {
+                        cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0;
+                        timer = 0;
                     }
                 }
-                else
-                {   
-                    isKeyPressed = false;
-                }
+            }
 
-                //Accelerate the fall of piece by pressing down key
-                cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
-                //Keep dropping by 1 continuously until hit the bottom boundary
-                if (timer >= dropSpeed)
-                {
-                    cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0;
-                    timer = 0;
-                }
-            //Quit Screen and free memory of SDL components when press Q key            
-            if (state[SDL_SCANCODE_Q])
-            {   
-                bGameOver = true;
-                SDL_DestroyRenderer(screen);
-                SDL_DestroyWindow(window);
-                SDL_Quit();
-                
-                return(0);
+    
+        if (state[SDL_SCANCODE_P])
+        {
+            if (!isPKeyPressed)
+            {
+                bIsPaused = !bIsPaused ? 1 : 0;       
+                isPKeyPressed = true;
             }
         }
+        else
+        {   
+            isPKeyPressed = false;
+        }
+
+        //Quit Screen and free memory of SDL components when press Q key            
+        if (state[SDL_SCANCODE_Q])
+        {   
+            bGameOver = true;
+            SDL_DestroyRenderer(screen);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return(0);
+        }
+        
     }
-    return 0;
+
 }
