@@ -1,3 +1,4 @@
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_scancode.h>
 #include <iostream>
@@ -9,18 +10,21 @@ const int TILE_SIZE = 32;
 
 using namespace std;
 
-bool isKeyPressed, isPKeyPressed;
+bool bIsKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
 double timer = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms
 
-SDL_Rect rect, gridRect;
+TTF_Font* font;
+
+SDL_Rect rect, gridRect, pauseRect;
+
+
 SDL_Color foregroundColor = { 255, 255, 255 };
 SDL_Color backgrounddColor = { 0, 0, 0 };
+SDL_Texture* PauseMSG;
 
 SDL_Window* window = NULL;
-
 SDL_Renderer* screen = NULL;
-
 SDL_Texture* Message = NULL;
 SDL_Texture* lBound = NULL;
 SDL_Texture* bBound = NULL;
@@ -96,20 +100,26 @@ void draw(shape s, grid g)
 void render()
 {
             //Background color of screen
-            SDL_SetRenderDrawColor(screen, 50, 0, 155, 255);
+            SDL_SetRenderDrawColor(screen, 50, 50, 50, 255);
             //Clear the screen. Remember, clear before draw every frame on game loop
             SDL_RenderClear(screen);
             //draw moving objects
+            
             draw(cur, curGrid);
+            
+            if (bIsPaused){
+                SDL_Surface* pauseSurface = TTF_RenderText_Solid(font, "PAUSED!", {230, 230, 230});
+                PauseMSG = SDL_CreateTextureFromSurface(screen, pauseSurface);
+                SDL_RenderCopy(screen, PauseMSG,  NULL,  &pauseRect);
+            }
+
             //Render all objects (surfaces) previously added to screen
             SDL_RenderPresent(screen);
-            
 }
 
 void update ()
 {
     timer++;
-            
     //// Things to update above, render below
     render();
 }
@@ -136,7 +146,6 @@ string willCollide(int cDirection)
                     tmpY = gridY+ blockY;
                     if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
                         { return "left_bound"; break; }
-
             }
         }
        
@@ -324,6 +333,13 @@ void HandleEvent(const SDL_Event& e)
 
 int main ( int argc, char **argv )
 {
+    TTF_Init();
+
+    font = TTF_OpenFont("Gameplay.ttf", 24);
+    pauseRect.w = 320;
+    pauseRect.h = 120;
+    pauseRect.x = (SCREEN_WIDTH/2) - (pauseRect.w/2);
+    pauseRect.y = (SCREEN_HEIGHT/2) - (pauseRect.h/2);
     
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
@@ -338,6 +354,12 @@ int main ( int argc, char **argv )
     {
         printf("Error creating renderer %s\n", SDL_GetError());
     } 
+
+    
+    
+
+
+
     srand(time(NULL));
     //cur = blocks[4];
     cur = blocks[rand() % 7];
@@ -350,12 +372,15 @@ int main ( int argc, char **argv )
    
     SDL_Event e;
 
-    bool bGameOver = false;
-    bool bIsPaused = false;
+
+    bGameOver = false;
+    bIsPaused = false;
     //Game loop
     
-    isPKeyPressed = false;
-    isKeyPressed = false;
+    bIsPKeyPressed = false;
+    bIsKeyPressed = false;
+
+
     while (!bGameOver)
     {   
         //declare state pointer to check keyboard state
@@ -374,26 +399,24 @@ int main ( int argc, char **argv )
             {
                 if (!bIsPaused)
                 {
-                    update();
 
-                    //Game tick timer in 17ms (~60fps)
+                    //Game tick timer in 20ms (~60fps = 17ms)
                     SDL_Delay( 20 );
 
                     //Left and Right movement until reach the side boundaries using ternary condition for clean code
                     cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
                     cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
+                    
                     //Just a try to hold the piece on same heigth using up key    
                     if (state[SDL_SCANCODE_UP])
                     {
-                        if (!isKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
+                        if (!bIsKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
                         {
                             rotate();
-                            isKeyPressed = !isKeyPressed ? 1 : 0;
+                            bIsKeyPressed = !bIsKeyPressed ? 1 : 0;
                         }
-                    }
-                    else{
-                        isKeyPressed = false;
-                    }
+                    } else{ bIsKeyPressed = false; }
+
                     //Accelerate the fall of piece by pressing down key
                     cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
                     //Keep dropping by 1 continuously until hit the bottom boundary
@@ -408,16 +431,17 @@ int main ( int argc, char **argv )
     
         if (state[SDL_SCANCODE_P])
         {
-            if (!isPKeyPressed)
+            if (!bIsPKeyPressed)
             {
                 bIsPaused = !bIsPaused ? 1 : 0;       
-                isPKeyPressed = true;
+                bIsPKeyPressed = true;
             }
         }
         else
         {   
-            isPKeyPressed = false;
+            bIsPKeyPressed = false;
         }
+                            update();
 
         //Quit Screen and free memory of SDL components when press Q key            
         if (state[SDL_SCANCODE_Q])
