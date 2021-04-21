@@ -14,10 +14,9 @@ bool bIsKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
 double timer = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms
 
-TTF_Font* font;
-
 SDL_Rect rect, gridRect, pauseRect;
 
+TTF_Font* font;
 
 SDL_Color foregroundColor = { 255, 255, 255 };
 SDL_Color backgrounddColor = { 0, 0, 0 };
@@ -151,7 +150,7 @@ string willCollide(int cDirection)
        
     break;
     }
-    /* //OLD VERSION OF LEFT BOUNDARY COLLISION DETECTION BELLOW    
+    /* //OLD VERSION OF LEFT BOUNDARY COLLISION DETECTION (CASE 0). Left it here just to show how ugly the first code looks like. 
         if (cur.x == 1) {
             if ( (cur.matrix[0][0]) || (cur.matrix[0][1]) || (cur.matrix[0][2]) || (cur.matrix[0][3]) ) {
                 return "left_bound";
@@ -205,14 +204,15 @@ string willCollide(int cDirection)
        
     break;
     }  
+
     case 2:
         if (cur.y <= 0)
             return "top_bound"; 
             
             break;
         
-        return " ";
-        break;
+    return " ";
+    break;
 
     case 3:
     {    
@@ -230,9 +230,9 @@ string willCollide(int cDirection)
                         { newBlock(); return "bottom_b"; break; }
             }
         }
-       
     break;
     }  
+
     case 4:
         //Chek if rotation is possible when on left boundary
         if ( (cur.x == 1)){
@@ -307,12 +307,10 @@ void newBlock()
             }
         }
     }
-
     //cur = blocks[4];
     cur = blocks[rand() % 7];
     rect.w=rect.h=TILE_SIZE;
     cur.x = 5; cur.y = 0;
-    
 }
 
 void checkFullLines()
@@ -329,17 +327,21 @@ void HandleEvent(const SDL_Event& e)
 
 }
 
-
-
-int main ( int argc, char **argv )
+void setRectSizes ()
 {
-    TTF_Init();
+    rect.w=rect.h=TILE_SIZE;
+    cur.x = 5; cur.y = 0;
 
-    font = TTF_OpenFont("Gameplay.ttf", 24);
+    gridRect.w=gridRect.h=TILE_SIZE;
+    
     pauseRect.w = 320;
     pauseRect.h = 120;
     pauseRect.x = (SCREEN_WIDTH/2) - (pauseRect.w/2);
     pauseRect.y = (SCREEN_HEIGHT/2) - (pauseRect.h/2);
+}
+
+int main ( int argc, char **argv )
+{
     
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
@@ -348,6 +350,8 @@ int main ( int argc, char **argv )
     else
     {
         window = SDL_CreateWindow( "TETRIS by Alexandre Bressane - press q to quit", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
+        TTF_Init();
+        font = TTF_OpenFont("Gameplay.ttf", 24);
     }
     
     if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
@@ -355,28 +359,17 @@ int main ( int argc, char **argv )
         printf("Error creating renderer %s\n", SDL_GetError());
     } 
 
-    
-    
-
-
-
     srand(time(NULL));
+
     //cur = blocks[4];
     cur = blocks[rand() % 7];
-    rect.w=rect.h=TILE_SIZE;
-    cur.x = 5; cur.y = 0;
-
-    gridRect.w=gridRect.h=TILE_SIZE;
-    
     curGrid = stage;
    
+    setRectSizes();
     SDL_Event e;
-
 
     bGameOver = false;
     bIsPaused = false;
-    //Game loop
-    
     bIsPKeyPressed = false;
     bIsKeyPressed = false;
 
@@ -387,7 +380,7 @@ int main ( int argc, char **argv )
         const Uint8 *state = SDL_GetKeyboardState(NULL);
         //then loop for events and handle it. Required to monitor keyboard events, for example.
         while (SDL_PollEvent(&e) != 0)
-        {
+        {       //Event handler loop. Needed to listen the keyboard inputs
                 HandleEvent(e);
         }
 
@@ -403,27 +396,29 @@ int main ( int argc, char **argv )
                     //Game tick timer in 20ms (~60fps = 17ms)
                     SDL_Delay( 20 );
 
-                    //Left and Right movement until reach the side boundaries using ternary condition for clean code
+                    //Left and Right movement until reach the side boundaries using ternary condition for cleaner code
                     cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
                     cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
                     
-                    //Just a try to hold the piece on same heigth using up key    
+                    //UP key to rotate the pieces
                     if (state[SDL_SCANCODE_UP])
                     {
+                        //Check for predective collision function (willCollide) before allow the rotation.
                         if (!bIsKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
                         {
                             rotate();
+                            //Accept only one rotation cycle for each time the key is pressed. Otherwise the piece will rotate constantly and annoyingly fast 
                             bIsKeyPressed = !bIsKeyPressed ? 1 : 0;
                         }
-                    } else{ bIsKeyPressed = false; }
+                    } else{ bIsKeyPressed = false; } // if the current game loop found the key up released, will change the pressed state to false.
 
                     //Accelerate the fall of piece by pressing down key
                     cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
                     //Keep dropping by 1 continuously until hit the bottom boundary
-                    if (timer >= dropSpeed)
+                    if (timer >= dropSpeed) // the timer will respect incrementes of 50ms for every 20ms (~58fps) until drop one block position. This is = 1sec.
                     {
-                        cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0;
-                        timer = 0;
+                        cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0; //Stops the falling when hit something at the bottom. 
+                        timer = 0;                                        //The collision will call another function to add the piece as part of the grid.
                     }
                 }
             }
@@ -441,7 +436,9 @@ int main ( int argc, char **argv )
         {   
             bIsPKeyPressed = false;
         }
-                            update();
+        
+        //Update the positions after the end of 20ms game loop cycle.
+        update();
 
         //Quit Screen and free memory of SDL components when press Q key            
         if (state[SDL_SCANCODE_Q])
@@ -454,5 +451,4 @@ int main ( int argc, char **argv )
         }
         
     }
-
 }
