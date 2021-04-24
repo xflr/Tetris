@@ -4,7 +4,7 @@ const int SCREEN_WIDTH = 480;
 const int SCREEN_HEIGHT = 768;
 const int gridWidth = 15;
 const int gridHeight = 24;
-
+const int TILE_SIZE = 32;
 
 struct grid
 {
@@ -72,7 +72,7 @@ shape blocks[7]
         5,4,4
     },
     {
-        {230,255,255},{ //Z BLOCK
+        {230,125,180},{ //Z BLOCK
         {1,1,0,0},
         {0,1,1,0},
         {0,0,0,0},

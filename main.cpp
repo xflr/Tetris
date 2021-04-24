@@ -6,13 +6,11 @@
 #include <stdio.h>
 #include "tetris.h"
 
-const int TILE_SIZE = 32;
-
 using namespace std;
 
 bool bIsKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
 double timer = 0;
-int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms
+int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms delay
 
 SDL_Rect rect, gridRect, pauseRect;
 
@@ -20,16 +18,17 @@ TTF_Font* font;
 
 SDL_Color foregroundColor = { 255, 255, 255 };
 SDL_Color backgrounddColor = { 0, 0, 0 };
-SDL_Texture* PauseMSG;
 
 SDL_Window* window = NULL;
 SDL_Renderer* screen = NULL;
-SDL_Texture* Message = NULL;
-SDL_Texture* lBound = NULL;
-SDL_Texture* bBound = NULL;
-SDL_Texture* rBound = NULL;
+SDL_Texture* PauseMSG;
 
 void newBlock();
+
+void HandleEvent(const SDL_Event& e)
+{
+
+}
 
 shape revCols(shape s)
 {
@@ -116,12 +115,6 @@ void render()
             SDL_RenderPresent(screen);
 }
 
-void update ()
-{
-    timer++;
-    //// Things to update above, render below
-    render();
-}
 void rotate()
 {
     cur = revCols(transposeShape(cur));
@@ -322,11 +315,6 @@ void checkFullLines()
     //then move all lines from y=0 to y + 1 until tempY, where found the full line
 }
 
-void HandleEvent(const SDL_Event& e)
-{
-
-}
-
 void setRectSizes ()
 {
     rect.w=rect.h=TILE_SIZE;
@@ -340,49 +328,17 @@ void setRectSizes ()
     pauseRect.y = (SCREEN_HEIGHT/2) - (pauseRect.h/2);
 }
 
-int main ( int argc, char **argv )
+void update ()
 {
-    
-    if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
-    {
-        printf( "SDL coud not intilalize! SDL_Error: %s\n", SDL_GetError() );
-    }
-    else
-    {
-        window = SDL_CreateWindow( "TETRIS by Alexandre Bressane - press q to quit", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
-        TTF_Init();
-        font = TTF_OpenFont("Gameplay.ttf", 24);
-    }
-    
-    if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
-    {
-        printf("Error creating renderer %s\n", SDL_GetError());
-    } 
-
-    srand(time(NULL));
-
-    //cur = blocks[4];
-    cur = blocks[rand() % 7];
-    curGrid = stage;
-   
-    setRectSizes();
     SDL_Event e;
 
-    bGameOver = false;
-    bIsPaused = false;
-    bIsPKeyPressed = false;
-    bIsKeyPressed = false;
-
-
-    while (!bGameOver)
-    {   
-        //declare state pointer to check keyboard state
-        const Uint8 *state = SDL_GetKeyboardState(NULL);
-        //then loop for events and handle it. Required to monitor keyboard events, for example.
-        while (SDL_PollEvent(&e) != 0)
-        {       //Event handler loop. Needed to listen the keyboard inputs
-                HandleEvent(e);
-        }
+    //declare state pointer to check keyboard state
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    //then loop for events and handle it. Required to monitor keyboard events, for example.
+    while (SDL_PollEvent(&e) != 0)
+    {       //Event handler loop. Needed to listen the keyboard inputs
+        HandleEvent(e);
+    }
 
             if( window == NULL )
             {
@@ -423,7 +379,6 @@ int main ( int argc, char **argv )
                 }
             }
 
-    
         if (state[SDL_SCANCODE_P])
         {
             if (!bIsPKeyPressed)
@@ -436,19 +391,61 @@ int main ( int argc, char **argv )
         {   
             bIsPKeyPressed = false;
         }
-        
-        //Update the positions after the end of 20ms game loop cycle.
-        update();
-
         //Quit Screen and free memory of SDL components when press Q key            
         if (state[SDL_SCANCODE_Q])
         {   
-            bGameOver = true;
             SDL_DestroyRenderer(screen);
             SDL_DestroyWindow(window);
             SDL_Quit();
-            return(0);
+            bGameOver = true;
+            
+            //return(0);
         }
+
+    timer++;
+    
+}
+
+int main ( int argc, char **argv )
+{
+    
+    if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
+    {
+        printf( "SDL coud not intilalize! SDL_Error: %s\n", SDL_GetError() );
+    }
+    else
+    {
+        window = SDL_CreateWindow( "TETRIS by Alexandre Bressane - press q to quit", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
+        TTF_Init();
+        font = TTF_OpenFont("Gameplay.ttf", 24);
+    }
+    
+    if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
+    {
+        printf("Error creating renderer %s\n", SDL_GetError());
+    } 
+
+    srand(time(NULL));
+
+    bGameOver = false;
+    bIsPaused = false;
+    bIsPKeyPressed = false;
+    bIsKeyPressed = false;
+
+    //cur = blocks[4];
+    cur = blocks[rand() % 7];
+    curGrid = stage;
+   
+    setRectSizes();
+
+
+    while (!bGameOver)
+    {   
+
+        //Update the positions after the end of 20ms game loop cycle.
+        update();
+        //// Things to update above, render below
+        render();
         
     }
 }
