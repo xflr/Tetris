@@ -8,7 +8,7 @@
 
 using namespace std;
 
-bool bIsKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
+bool bIsUPKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
 double timer = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms delay
 
@@ -25,7 +25,7 @@ SDL_Texture* PauseMSG;
 
 void newBlock();
 
-void HandleEvent(const SDL_Event& e)
+void HandleEvent(const SDL_Event& e) // empty void just to bring the HandleEvent from SDL lib to scope
 {
 
 }
@@ -352,7 +352,7 @@ void update ()
                     //Game tick timer in 20ms (~60fps = 17ms)
                     SDL_Delay( 20 );
 
-                    //Left and Right movement until reach the side boundaries using ternary condition for cleaner code
+                    //Left and Right movement until reach the side boundaries using ternary condition 
                     cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
                     cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
                     
@@ -360,13 +360,13 @@ void update ()
                     if (state[SDL_SCANCODE_UP])
                     {
                         //Check for predective collision function (willCollide) before allow the rotation.
-                        if (!bIsKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
+                        if (!bIsUPKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
                         {
                             rotate();
                             //Accept only one rotation cycle for each time the key is pressed. Otherwise the piece will rotate constantly and annoyingly fast 
-                            bIsKeyPressed = !bIsKeyPressed ? 1 : 0;
+                            bIsUPKeyPressed = !bIsUPKeyPressed ? 1 : 0;
                         }
-                    } else{ bIsKeyPressed = false; } // if the current game loop found the key up released, will change the pressed state to false.
+                    } else{ bIsUPKeyPressed = false; } // if the current game loop found the key up released, will change the pressed state to false.
 
                     //Accelerate the fall of piece by pressing down key
                     cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
@@ -408,7 +408,7 @@ void update ()
 
 int main ( int argc, char **argv )
 {
-    
+    //Init the SDL library, create the windows and the renderer on main winddow.
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
         printf( "SDL coud not intilalize! SDL_Error: %s\n", SDL_GetError() );
@@ -425,27 +425,24 @@ int main ( int argc, char **argv )
         printf("Error creating renderer %s\n", SDL_GetError());
     } 
 
-    srand(time(NULL));
-
+    //forcebly clean the inital values on main program load.
     bGameOver = false;
     bIsPaused = false;
     bIsPKeyPressed = false;
-    bIsKeyPressed = false;
+    bIsUPKeyPressed = false;
 
+    srand(time(NULL)); //srand is required in order to randomize  properly
     //cur = blocks[4];
-    cur = blocks[rand() % 7];
-    curGrid = stage;
+    cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
+    curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
    
     setRectSizes();
 
-
-    while (!bGameOver)
+    while (!bGameOver) //Game loop. Pretty clean, right?
     {   
-
         //Update the positions after the end of 20ms game loop cycle.
         update();
         //// Things to update above, render below
         render();
-        
     }
 }
