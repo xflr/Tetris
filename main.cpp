@@ -254,26 +254,26 @@ string willCollide(int cDirection)
         }
         
         //Chek if rotation is possible when on right boundary
-        if ( ((cur.x + cur.size)) == (gridWidth - 2)) {
-            if (cur.size == 3){
-                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+        if ( ((cur.x + cur.size)) == (gridWidth - 1)) {
+            if (cur.size == 3) {
+                if ((cur.matrix[0][0] == true) || (cur.matrix[1][0] == true))   
                     return "cant_rotate"; 
                     break;  
             }
-            if (cur.size == 4) {
+            /*if (cur.size == 4) {
                 if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
                     return "cant_rotate"; 
                     break;    
-            }
+            }*/
         }
-        if ( ((cur.x + cur.size) - 1) >= (gridWidth - 2)) {
+        if ( ((cur.x + cur.size) - 1) >= (gridWidth - 1)) {
             if (cur.size == 3){
-                if ((cur.matrix[1][2] == true) || (cur.matrix[2][2] == true))
+                if ((cur.matrix[0][0] == true) || (cur.matrix[1][0] == true))
                     return "cant_rotate"; 
                     break;  
             }
             if (cur.size == 4) {
-                if ((cur.matrix[1][3] == true) || (cur.matrix[2][3] == true) || (cur.matrix[3][3] == true ) && cur.matrix[3][2])
+                if ((cur.matrix[0][0] == true) || (cur.matrix[0][1] == true) || (cur.matrix[0][2] == true ) && cur.matrix[1][1])
                     return "cant_rotate"; 
                     break;    
             }
@@ -432,8 +432,8 @@ int main ( int argc, char **argv )
     bIsUPKeyPressed = false;
 
     srand(time(NULL)); //srand is required in order to randomize  properly
-    //cur = blocks[4];
-    cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
+    cur = blocks[2];
+    //cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
     curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
    
     setRectSizes();
