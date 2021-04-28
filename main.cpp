@@ -282,6 +282,30 @@ string willCollide(int cDirection)
         break;
     }
     return " ";
+}  
+
+void checkFullLines()
+{
+    int fullLine = 0;
+    //loop tru all lines and check the matrix of line y from x=1 to x=gridWidth - 1
+    for (int line = (gridHeight - 2); line >= 0; line--)
+    {
+        fullLine = 0;
+        for (int col = 1; col < gridWidth - 1 ; col++)
+        {
+                if (curGrid.matrix[line][col] == 1) {fullLine++;}
+        
+        }
+        if (fullLine == 13) //if so change this whole line to 0
+        {
+            for (int zeroCol = 1; zeroCol < gridWidth - 1; zeroCol++)
+            {
+                curGrid.matrix[line][zeroCol] = false;
+            }
+        }
+    }
+    //then, move all lines from y=0 to y + 1 until tempY, where found the full line
+
 }
 
 void newBlock() 
@@ -300,20 +324,13 @@ void newBlock()
             }
         }
     }
+    checkFullLines();
     //cur = blocks[4];
     cur = blocks[rand() % 7];
     rect.w=rect.h=TILE_SIZE;
     cur.x = 5; cur.y = 0;
 }
 
-void checkFullLines()
-{
-    //loop tru all lines and check the matrix of line y from x=1 to x=gridWidth - 1
-
-    //if so change this whole line to 0
-
-    //then move all lines from y=0 to y + 1 until tempY, where found the full line
-}
 
 void setRectSizes ()
 {
@@ -401,7 +418,7 @@ void update ()
             
             //return(0);
         }
-
+    
     timer++;
     
 }
