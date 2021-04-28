@@ -1,6 +1,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_scancode.h>
+#include <sstream>
 #include <iostream>
 #include <vector>
 #include <stdio.h>
@@ -10,24 +11,48 @@ using namespace std;
 
 bool bIsUPKeyPressed, bIsPKeyPressed, bIsPaused, bGameOver;
 double timer = 0;
+int score = 0;
 int dropSpeed = 50; // Every row completed we can decrease this value to get faster drop - 50 is 1sec and 0 is 20ms delay
 
-SDL_Rect rect, gridRect, pauseRect;
+SDL_Rect rect, gridRect, pauseRect, scoreRect;
 
-TTF_Font* font;
+TTF_Font *pauseFont, *scoreFont;
 
 SDL_Color foregroundColor = { 255, 255, 255 };
 SDL_Color backgrounddColor = { 0, 0, 0 };
 
-SDL_Window* window = NULL;
-SDL_Renderer* screen = NULL;
-SDL_Texture* PauseMSG;
+SDL_Window *window = NULL;
+SDL_Renderer *screen = NULL;
+SDL_Texture *PauseMSG;
+SDL_Texture *ScoreMSG;
 
 void newBlock();
 
 void HandleEvent(const SDL_Event& e) // empty void just to bring the HandleEvent from SDL lib to scope
 {
 
+}
+
+void drawStage()
+{
+    double screenDrawX, screenDrawY;
+    for (int i = 0; i < gridWidth; i++)
+    {
+        for(int j = 0; j < gridHeight; j++)
+        {
+            if (curGrid.matrix[j][i])
+            {
+                screenDrawX = (i * TILE_SIZE) ;
+                screenDrawY = (j * TILE_SIZE) ;
+                gridRect.x=screenDrawX; gridRect.y=screenDrawY;
+
+                SDL_SetRenderDrawColor(screen, stage.color.r, stage.color.g, stage.color.b, 255);
+                SDL_RenderFillRect(screen, &gridRect);
+                SDL_SetRenderDrawColor(screen, 219, 219, 219, 255);
+                SDL_RenderDrawRect(screen, &gridRect);
+            }
+        }
+    }
 }
 
 shape revCols(shape s)
@@ -76,9 +101,9 @@ void draw(shape s, grid g)
     }
     double screenDrawX, screenDrawY;
     //draw stage
-    for (int i = 0; i < gridWidth; i++)
+    for (int i = 1; i < gridWidth - 1; i++)
     {
-        for(int j = 0; j < gridHeight; j++)
+        for(int j = 0; j < gridHeight - 1; j++)
         {
             if (curGrid.matrix[j][i])
             {
@@ -95,22 +120,37 @@ void draw(shape s, grid g)
     }
 }
 
+void drawScore()
+{
+    int iWidth, iHeight;
+    std::stringstream strm;
+    strm << score;
+    SDL_Surface* scoreSurface = TTF_RenderText_Solid(scoreFont, strm.str().c_str(), {230, 230, 230});
+    TTF_SizeText(scoreFont,strm.str().c_str(), &iWidth, &iHeight);
+    scoreRect.w = iWidth;
+    scoreRect.h = iHeight;
+
+    ScoreMSG = SDL_CreateTextureFromSurface(screen, scoreSurface);
+    SDL_RenderCopy(screen, ScoreMSG,  NULL,  &scoreRect);
+}
+
 void render()
 {
             //Background color of screen
             SDL_SetRenderDrawColor(screen, 50, 50, 50, 255);
             //Clear the screen. Remember, clear before draw every frame on game loop
             SDL_RenderClear(screen);
+            //draw fixed objects
+            drawStage();
+            drawScore();
             //draw moving objects
-            
             draw(cur, curGrid);
             
             if (bIsPaused){
-                SDL_Surface* pauseSurface = TTF_RenderText_Solid(font, "PAUSED!", {230, 230, 230});
+                SDL_Surface* pauseSurface = TTF_RenderText_Solid(pauseFont, "PAUSED!", {230, 230, 230});
                 PauseMSG = SDL_CreateTextureFromSurface(screen, pauseSurface);
                 SDL_RenderCopy(screen, PauseMSG,  NULL,  &pauseRect);
             }
-
             //Render all objects (surfaces) previously added to screen
             SDL_RenderPresent(screen);
 }
@@ -220,7 +260,7 @@ string willCollide(int cDirection)
                     tmpX = gridX + blockX;
                     tmpY = gridY+ blockY + 1;
                     if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
-                        { newBlock(); return "bottom_b"; break; }
+                        { newBlock(); score += 10; return "bottom_b"; break; }
             }
         }
     break;
@@ -289,12 +329,11 @@ void checkFullLines()
     int fullLine = 0;
     //loop tru all lines and check the matrix of line y from x=1 to x=gridWidth - 1
     for (int line = (gridHeight - 2); line >= 0; line--)
-    {
+    {     
         fullLine = 0;
         for (int col = 1; col < gridWidth - 1 ; col++)
         {
                 if (curGrid.matrix[line][col] == 1) {fullLine++;}
-        
         }
         if (fullLine == 13) //if so change this whole line to 0
         {
@@ -302,10 +341,20 @@ void checkFullLines()
             {
                 curGrid.matrix[line][zeroCol] = false;
             }
+            
+            //then, move all lines from y=0 to y + 1 until tempY, where found the full line
+            for (int i = line; i >0; i--)
+            {
+                for (int j = 1; j < gridWidth - 1; j++)
+                {
+                    curGrid.matrix[i][j] = curGrid.matrix[i-1][j];
+                }
+            }
+            score +=120;
+            line++; // keeps the line loop at same place to process the lines dropped after the current row delete.          
         }
     }
-    //then, move all lines from y=0 to y + 1 until tempY, where found the full line
-
+    return;
 }
 
 void newBlock() 
@@ -343,6 +392,12 @@ void setRectSizes ()
     pauseRect.h = 120;
     pauseRect.x = (SCREEN_WIDTH/2) - (pauseRect.w/2);
     pauseRect.y = (SCREEN_HEIGHT/2) - (pauseRect.h/2);
+
+    scoreRect.x = 50;
+    scoreRect.y = 5;
+    scoreRect.w = 80;
+    scoreRect.h = 20;
+    
 }
 
 void update ()
@@ -434,7 +489,8 @@ int main ( int argc, char **argv )
     {
         window = SDL_CreateWindow( "TETRIS by Alexandre Bressane - press q to quit", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0 );
         TTF_Init();
-        font = TTF_OpenFont("Gameplay.ttf", 24);
+        scoreFont = TTF_OpenFont("Gameplay.ttf", 18);
+        pauseFont = TTF_OpenFont("Gameplay.ttf", 24);
     }
     
     if ((screen = SDL_CreateRenderer(window, -1, 0)) < 0)
@@ -454,7 +510,7 @@ int main ( int argc, char **argv )
     curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
    
     setRectSizes();
-
+    
     while (!bGameOver) //Game loop. Pretty clean, right?
     {   
         //Update the positions after the end of 20ms game loop cycle.
