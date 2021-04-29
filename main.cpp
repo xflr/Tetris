@@ -129,8 +129,8 @@ void drawScore()
     SDL_Surface* scoreSurface = TTF_RenderText_Solid(scoreFont, strm.str().c_str(), {230, 230, 230});
     //Dynamic set of Width and Height of score rect to avoid pixelated output while change the # of digts
     TTF_SizeText(scoreFont,strm.str().c_str(), &tmpW, &tmpH); 
-    scoreRect.w = iWidth;
-    scoreRect.h = iHeight;
+    scoreRect.w = tmpW;
+    scoreRect.h = tmpH;
     //Render score surface with updated dynamic size
     ScoreMSG = SDL_CreateTextureFromSurface(screen, scoreSurface);
     SDL_RenderCopy(screen, ScoreMSG,  NULL,  &scoreRect);
