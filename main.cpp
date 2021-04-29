@@ -122,37 +122,39 @@ void draw(shape s, grid g)
 
 void drawScore()
 {
-    int iWidth, iHeight;
+    int tmpW, tmpH;
+    //TTF_RenderText requires const char* parameter or inline text string in double quotes. Using stringstream to convert in 2 steps - int to str, then to c_str(inline)
     std::stringstream strm;
     strm << score;
     SDL_Surface* scoreSurface = TTF_RenderText_Solid(scoreFont, strm.str().c_str(), {230, 230, 230});
-    TTF_SizeText(scoreFont,strm.str().c_str(), &iWidth, &iHeight);
+    //Dynamic set of Width and Height of score rect to avoid pixelated output while change the # of digts
+    TTF_SizeText(scoreFont,strm.str().c_str(), &tmpW, &tmpH); 
     scoreRect.w = iWidth;
     scoreRect.h = iHeight;
-
+    //Render score surface with updated dynamic size
     ScoreMSG = SDL_CreateTextureFromSurface(screen, scoreSurface);
     SDL_RenderCopy(screen, ScoreMSG,  NULL,  &scoreRect);
 }
 
 void render()
 {
-            //Background color of screen
-            SDL_SetRenderDrawColor(screen, 50, 50, 50, 255);
-            //Clear the screen. Remember, clear before draw every frame on game loop
-            SDL_RenderClear(screen);
-            //draw fixed objects
-            drawStage();
-            drawScore();
-            //draw moving objects
-            draw(cur, curGrid);
-            
-            if (bIsPaused){
-                SDL_Surface* pauseSurface = TTF_RenderText_Solid(pauseFont, "PAUSED!", {230, 230, 230});
-                PauseMSG = SDL_CreateTextureFromSurface(screen, pauseSurface);
-                SDL_RenderCopy(screen, PauseMSG,  NULL,  &pauseRect);
-            }
-            //Render all objects (surfaces) previously added to screen
-            SDL_RenderPresent(screen);
+    //Background color of screen
+    SDL_SetRenderDrawColor(screen, 50, 50, 50, 255);
+    //Clear the screen. Remember, clear before draw every frame on game loop
+    SDL_RenderClear(screen);
+    //draw fixed objects
+    drawStage();
+    drawScore();
+    //draw moving objects
+    draw(cur, curGrid);
+    
+    if (bIsPaused){
+        SDL_Surface* pauseSurface = TTF_RenderText_Solid(pauseFont, "PAUSED!", {230, 230, 230});
+        PauseMSG = SDL_CreateTextureFromSurface(screen, pauseSurface);
+        SDL_RenderCopy(screen, PauseMSG,  NULL,  &pauseRect);
+    }
+    //Render all objects (surfaces) previously added to screen
+    SDL_RenderPresent(screen);
 }
 
 void rotate()
@@ -164,7 +166,7 @@ string willCollide(int cDirection)
 {
     switch (cDirection)
     {
-    case 0:
+    case 0: //Collision detection when move to  the left
     {    
         int gridX = cur.x;
         int gridY = cur.y;
@@ -183,41 +185,8 @@ string willCollide(int cDirection)
        
     break;
     }
-    /* //OLD VERSION OF LEFT BOUNDARY COLLISION DETECTION (CASE 0). Left it here just to show how ugly the first code looks like. 
-        if (cur.x == 1) {
-            if ( (cur.matrix[0][0]) || (cur.matrix[0][1]) || (cur.matrix[0][2]) || (cur.matrix[0][3]) ) {
-                return "left_bound";
-                break;
-            }
-        }
-        if (cur.x == 0) {
-            if ( (cur.matrix[1][0]) || (cur.matrix[1][1]) || (cur.matrix[1][2]) || (cur.matrix[1][3]) ) {
-                return "left_bound";
-                break;
-            }
-        }
-        if (cur.x == -1) {
-            if ( (cur.matrix[2][0]) || (cur.matrix[2][1]) || (cur.matrix[2][2]) || (cur.matrix[2][3]) ) {
-                return "left_bound";
-                break;
-            }
-        }
-        if (cur.x == -2) {
-            if ( (cur.matrix[3][0]) || (cur.matrix[3][1]) || (cur.matrix[3][2]) || (cur.matrix[3][3]) ) {
-                return "left_bound";
-                break;
-            }
-        }
-        else
-        {
-            return " ";
-            break;
-        }
-    return " ";
-    break; 
-    */
 
-    case 1:
+    case 1: //Collision detection when move to the right
     {    
         int gridX = cur.x;
         int gridY = cur.y;
@@ -238,7 +207,7 @@ string willCollide(int cDirection)
     break;
     }  
 
-    case 2:
+    case 2: //Collision detection TBD for game over
         if (cur.y <= 0)
             return "top_bound"; 
             
@@ -247,7 +216,7 @@ string willCollide(int cDirection)
     return " ";
     break;
 
-    case 3:
+    case 3: //Collision detection when move down
     {    
         int gridX = cur.x;
         int gridY = cur.y;
@@ -292,7 +261,6 @@ string willCollide(int cDirection)
                     break;    
             }
         }
-        
         //Chek if rotation is possible when on right boundary
         if ( ((cur.x + cur.size)) == (gridWidth - 1)) {
             if (cur.size == 3) {
@@ -318,7 +286,6 @@ string willCollide(int cDirection)
                     break;    
             }
         }
-        return " ";
         break;
     }
     return " ";
@@ -397,13 +364,11 @@ void setRectSizes ()
     scoreRect.y = 5;
     scoreRect.w = 80;
     scoreRect.h = 20;
-    
 }
 
 void update ()
 {
     SDL_Event e;
-
     //declare state pointer to check keyboard state
     const Uint8 *state = SDL_GetKeyboardState(NULL);
     //then loop for events and handle it. Required to monitor keyboard events, for example.
@@ -412,70 +377,63 @@ void update ()
         HandleEvent(e);
     }
 
-            if( window == NULL )
-            {
-                printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
-            }
-            else
-            {
-                if (!bIsPaused)
-                {
-
-                    //Game tick timer in 20ms (~60fps = 17ms)
-                    SDL_Delay( 20 );
-
-                    //Left and Right movement until reach the side boundaries using ternary condition 
-                    cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
-                    cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
-                    
-                    //UP key to rotate the pieces
-                    if (state[SDL_SCANCODE_UP])
-                    {
-                        //Check for predective collision function (willCollide) before allow the rotation.
-                        if (!bIsUPKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
-                        {
-                            rotate();
-                            //Accept only one rotation cycle for each time the key is pressed. Otherwise the piece will rotate constantly and annoyingly fast 
-                            bIsUPKeyPressed = !bIsUPKeyPressed ? 1 : 0;
-                        }
-                    } else{ bIsUPKeyPressed = false; } // if the current game loop found the key up released, will change the pressed state to false.
-
-                    //Accelerate the fall of piece by pressing down key
-                    cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
-                    //Keep dropping by 1 continuously until hit the bottom boundary
-                    if (timer >= dropSpeed) // the timer will respect incrementes of 50ms for every 20ms (~58fps) until drop one block position. This is = 1sec.
-                    {
-                        cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0; //Stops the falling when hit something at the bottom. 
-                        timer = 0;                                        //The collision will call another function to add the piece as part of the grid.
-                    }
-                }
-            }
-
-        if (state[SDL_SCANCODE_P])
+    if( window == NULL )
+    {
+        printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
+    }
+    else
+    {
+        if (!bIsPaused)
         {
-            if (!bIsPKeyPressed)
+            //Game tick timer in 20ms (~60fps = 17ms)
+            SDL_Delay( 20 );
+            //Left and Right movement until reach the side boundaries using ternary condition 
+            cur.x -= (state[SDL_SCANCODE_LEFT] && !(willCollide(0) == "left_bound")) ? 1 : 0;
+            cur.x += (state[SDL_SCANCODE_RIGHT] && !(willCollide(1) == "right_bound")) ? 1 : 0;
+            
+            //UP key to rotate the pieces
+            if (state[SDL_SCANCODE_UP])
             {
-                bIsPaused = !bIsPaused ? 1 : 0;       
-                bIsPKeyPressed = true;
+                //Check for predective collision function (willCollide) before allow the rotation.
+                if (!bIsUPKeyPressed && !(willCollide(2) == "top_bound") && !(willCollide(4) == "cant_rotate"))
+                {
+                    rotate();
+                    //Accept only one rotation cycle for each time the key is pressed. Otherwise the piece will rotate constantly and annoyingly fast 
+                    bIsUPKeyPressed = !bIsUPKeyPressed ? 1 : 0;
+                }
+            } else{ bIsUPKeyPressed = false; } // if the current game loop found the key up released, will change the pressed state to false.
+
+            //Accelerate the fall of piece by pressing down key
+            cur.y += (state[SDL_SCANCODE_DOWN] && !(willCollide(3) == "bottom_b")) ? 1 : 0;
+            //Keep dropping by 1 continuously until hit the bottom boundary
+            if (timer >= dropSpeed) // the timer will respect incrementes of 50ms for every 20ms (~58fps) until drop one block position. This is = 1sec.
+            {
+                cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0; //Stops the falling when hit something at the bottom. 
+                timer = 0;                                        //The collision will call another function to add the piece as part of the grid.
             }
         }
-        else
-        {   
-            bIsPKeyPressed = false;
+    }
+    if (state[SDL_SCANCODE_P])
+    {
+        if (!bIsPKeyPressed)
+        {
+            bIsPaused = !bIsPaused ? 1 : 0;       
+            bIsPKeyPressed = true;
         }
-        //Quit Screen and free memory of SDL components when press Q key            
-        if (state[SDL_SCANCODE_Q])
-        {   
-            SDL_DestroyRenderer(screen);
-            SDL_DestroyWindow(window);
-            SDL_Quit();
-            bGameOver = true;
-            
-            //return(0);
-        }
-    
+    }
+    else
+    {   
+        bIsPKeyPressed = false;
+    }
+    //Quit Screen and free memory of SDL components when press Q key            
+    if (state[SDL_SCANCODE_Q])
+    {   
+        SDL_DestroyRenderer(screen);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        bGameOver = true;
+    }
     timer++;
-    
 }
 
 int main ( int argc, char **argv )
@@ -505,8 +463,8 @@ int main ( int argc, char **argv )
     bIsUPKeyPressed = false;
 
     srand(time(NULL)); //srand is required in order to randomize  properly
-    cur = blocks[2];
-    //cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
+    //cur = blocks[2];
+    cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
     curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
    
     setRectSizes();
