@@ -1,6 +1,8 @@
 TETRIS
 
-C++ Game showcase. 
+C++ Game showcase.
+
+![Alt text](/../screenshots/tetris1.png?raw=true "Current Status")
 
 Requires SDL2 and SDL2_TTF (I'd encourage you to read the libs documentation)
 
