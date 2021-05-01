@@ -27,6 +27,7 @@ SDL_Texture *PauseMSG;
 SDL_Texture *ScoreMSG;
 
 void newBlock();
+void startGame();
 
 void HandleEvent(const SDL_Event& e) // empty void just to bring the HandleEvent from SDL lib to scope
 {
@@ -126,7 +127,7 @@ void drawScore()
     //TTF_RenderText requires const char* parameter or inline text string in double quotes. Using stringstream to convert in 2 steps - int to str, then to c_str(inline)
     std::stringstream strm;
     strm << score;
-    SDL_Surface* scoreSurface = TTF_RenderText_Solid(scoreFont, strm.str().c_str(), {230, 230, 230});
+    SDL_Surface* scoreSurface = TTF_RenderText_Solid(scoreFont, strm.str().c_str(), {230, 70, 230});
     //Dynamic set of Width and Height of score rect to avoid pixelated output while change the # of digts
     TTF_SizeText(scoreFont,strm.str().c_str(), &tmpW, &tmpH); 
     scoreRect.w = tmpW;
@@ -226,10 +227,16 @@ string willCollide(int cDirection)
         {
             for (int blockY = 3; blockY >= 0; blockY--)
             {
-                    tmpX = gridX + blockX;
-                    tmpY = gridY+ blockY + 1;
-                    if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
-                        { newBlock(); score += 10; return "bottom_b"; break; }
+                tmpX = gridX + blockX;
+                tmpY = gridY+ blockY + 1;
+                if ( (cur.matrix[blockX][blockY]) && (curGrid.matrix[tmpY][tmpX]) )
+                    {
+                        if (cur.y <= 0){
+                            bGameOver = true;
+                        } else {
+                         newBlock(); score += 10; return "bottom_b"; break; 
+                        }
+                    }
             }
         }
     break;
@@ -433,12 +440,18 @@ void update ()
         SDL_Quit();
         bGameOver = true;
     }
+    if (state[SDL_SCANCODE_ESCAPE])
+    {   
+        SDL_DestroyRenderer(screen);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        startGame();
+    }
     timer++;
 }
-
-int main ( int argc, char **argv )
+void startGame()
 {
-    //Init the SDL library, create the windows and the renderer on main winddow.
+        //Init the SDL library, create the windows and the renderer on main winddow.
     if ( SDL_Init ( SDL_INIT_VIDEO ) < 0)
     {
         printf( "SDL coud not intilalize! SDL_Error: %s\n", SDL_GetError() );
@@ -461,13 +474,11 @@ int main ( int argc, char **argv )
     bIsPaused = false;
     bIsPKeyPressed = false;
     bIsUPKeyPressed = false;
-
+    score = 0;
     srand(time(NULL)); //srand is required in order to randomize  properly
     //cur = blocks[2];
     cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
     curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
-   
-    setRectSizes();
     
     while (!bGameOver) //Game loop. Pretty clean, right?
     {   
@@ -476,4 +487,11 @@ int main ( int argc, char **argv )
         //// Things to update above, render below
         render();
     }
+}
+
+int main ( int argc, char **argv )
+{
+  
+    setRectSizes();
+    startGame();
 }
