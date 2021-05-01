@@ -491,7 +491,6 @@ void startGame()
 
 int main ( int argc, char **argv )
 {
-  
     setRectSizes();
     startGame();
 }
