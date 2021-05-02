@@ -476,8 +476,8 @@ void startGame()
     bIsUPKeyPressed = false;
     score = 0;
     srand(time(NULL)); //srand is required in order to randomize  properly
-    //cur = blocks[2];
-    cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void
+    //cur = blocks[2]; //For test purposes only. replace by the line bellow to choose the first shape
+    cur = blocks[rand() % 7]; //choose the first piece randomly. Then, the next ones will be called by the update void (newBlock())
     curGrid = stage; //Sets the stage boundaries as drawn in the matrix on tetrix.h header file
     
     while (!bGameOver) //Game loop. Pretty clean, right?
@@ -493,4 +493,13 @@ int main ( int argc, char **argv )
 {
     setRectSizes();
     startGame();
+    /*
+    Pending: 
+        1) Add main menu
+        2) Add player name input
+        3) Save high scores in a text file
+        4) Create a Game Over splash screen and display high scores
+        5) Increase drop speed based on score progression
+        6) Fix left/right keys input speed (too sensitive)
+    */
 }
