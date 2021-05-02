@@ -418,6 +418,7 @@ void update ()
                 cur.y += !(willCollide(3) == "bottom_b") ? 1 : 0; //Stops the falling when hit something at the bottom. 
                 timer = 0;                                        //The collision will call another function to add the piece as part of the grid.
             }
+            timer++;
         }
     }
     if (state[SDL_SCANCODE_P])
@@ -447,7 +448,6 @@ void update ()
         SDL_Quit();
         startGame();
     }
-    timer++;
 }
 void startGame()
 {
